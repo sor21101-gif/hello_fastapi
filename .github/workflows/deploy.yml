@@ -1,0 +1,36 @@
+# app01/.github/workflows/deploy.yml
+name: fastapi 를 aws linux에 배포하기
+
+on: 
+    push: 
+        branches: ["master"] # master branch에 push될 때 아래의 job을 실행해라는 의미
+
+jobs: 
+    deploy: 
+        runs-on: ubuntu-lates
+        steps: 
+            - name: ssh 원격 명령
+              uses: appleboy/ssh-action@master
+              with:
+                host: ${{ secrets.EC2_HOST }}
+                username: ${{ secrets.EC2_USER }}
+                key: ${{ secrets.EC2_KEY }}
+                port: 22
+                script: |
+                    # 1. 프로젝트 경로로 이동
+                    cd ~/hello_fastapi
+
+                    # 2. git이 설치되어있고 최초에 한번 clone되어 있다고 가정하에 pull하기
+                    git pull origin master
+                    
+                    # 3. python가상환경 활성화 및 의존성 업데이트
+                    source venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+
+                    # 4. 실행중인 프로세스가 있으면 종료
+                    fuser -k 8000/tcp || true
+
+                    # 5. 백그라운드로 실행하기
+                    # nohup으로 실행하고 로그는 app.log에 남기기
+                    nohup python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 > app.log 2>&1 &
