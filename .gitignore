@@ -1,0 +1,4 @@
+# .gitignore
+# git에서 추적하면 안되는 폴더나 파일 목록을 지정
+__pycache__/
+venv/
